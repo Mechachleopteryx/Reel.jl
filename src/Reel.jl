@@ -2,7 +2,7 @@ module Reel
 
 using Compat
 
-import Base: write, push!, writemime
+import Base: write, push!, show
 export Frames, roll
 
 global _output_type = "webm"
@@ -29,7 +29,7 @@ extension(s::AbstractString) = split(s, ".")[end]
 
 function writeframe(filename, mime::MIME, frame)
     file = open(filename, "w")
-    writemime(file, mime, frame)
+    show(file, mime, frame)
     close(file)
 end
 
@@ -68,9 +68,9 @@ function write{M}(f::AbstractString, frames::Frames{M}; fps=frames.fps)
         # The maximum delay widely supported by clients is 2 ticks (100 ticks per sec)
         #delay = max(round(100/fps), 2) |> int
         args = reduce(vcat, [[joinpath("$dir", "$i.$ext"), "-delay", "1x$fps", "-alpha", "remove"] for i in 1:frames.length])
-        cmd = try readall(`which convert`)
+        cmd = try readstring(`which convert`)
         catch e1
-            try readall(`which magick`)
+            try readstring(`which magick`)
             catch e2
                 error("Could not find imagemagick binary. Is it installed?")
             end
@@ -115,7 +115,7 @@ function newname!(ext)
     string("reel-", rand(UInt), ".", ext)
 end
 
-#### writemimes ####
+#### mimes ####
 # TODO: research the crap out of this
 
 function writehtml(io, file, file_type)
@@ -129,7 +129,7 @@ function writehtml(io, file, file_type)
     end
 end
 
-function writemime(io::IO, ::MIME"text/html", frames::Frames)
+function show(io::IO, ::MIME"text/html", frames::Frames)
     # If IJulia is present, see if the frames are rendered
     global _output_type
     if frames.rendered == nothing || !isfile(frames.rendered) || extension(frames.rendered) != _output_type
